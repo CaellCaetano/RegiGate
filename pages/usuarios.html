@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usuários — RegiGate</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .filter-select {
+      padding: 9px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .user-avatar-table {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      border: 2px solid var(--accent);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .nivel-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .nivel-admin     { background: rgba(239,68,68,0.12); color: #EF4444; }
+    .nivel-supervisor{ background: rgba(245,158,11,0.12); color: #F59E0B; }
+    .nivel-operador  { background: rgba(59,130,246,0.12); color: #3B82F6; }
+
+    .action-btns { display: flex; gap: 6px; }
+
+    .confirm-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: all var(--transition);
+    }
+    .confirm-overlay.open { opacity: 1; visibility: visible; }
+    .confirm-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      max-width: 380px; width: 90%;
+      text-align: center;
+      transform: scale(0.95);
+      transition: transform var(--transition);
+    }
+    .confirm-overlay.open .confirm-box { transform: scale(1); }
+    .confirm-icon { font-size: 2.5rem; margin-bottom: 12px; color: var(--danger); }
+    .confirm-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+    .confirm-msg { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+
+    .field-error { font-size: 0.75rem; color: var(--danger); margin-top: 4px; display: none; }
+    .field-error.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div id="sidebar-container"></div>
+    <div class="main-content">
+      <div id="topbar-container"></div>
+      <main class="page-content">
+
+        <div class="toolbar fade-up">
+          <div class="toolbar-left">
+            <div class="search-bar">
+              <i class="fas fa-search"></i>
+              <input type="text" id="search-input" placeholder="Buscar nome, e-mail ou matrícula..." />
+            </div>
+            <select class="filter-select" id="filter-nivel">
+              <option value="">Todos os níveis</option>
+              <option value="admin">Administrador</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="operador">Operador</option>
+            </select>
+            <select class="filter-select" id="filter-status">
+              <option value="">Todos os status</option>
+              <option value="ativo">Ativos</option>
+              <option value="inativo">Inativos</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="openModal()">
+            <i class="fas fa-user-plus"></i> Novo Usuário
+          </button>
+        </div>
+
+        <div class="card fade-up-1">
+          <div class="card-header" style="padding:20px 24px 16px;">
+            <span class="card-title"><i class="fas fa-users" style="color:var(--accent);margin-right:8px;"></i>Colaboradores e Operadores</span>
+            <span style="font-size:0.8rem;color:var(--text-muted);" id="count-info"></span>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>E-mail</th>
+                  <th>Matrícula</th>
+                  <th>Cargo</th>
+                  <th>Nível</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="usuarios-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Criar/Editar -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">Novo Usuário</span>
+        <div class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></div>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nome Completo *</label>
+          <input type="text" id="f-nome" class="form-control" placeholder="João da Silva" />
+          <div class="field-error" id="e-nome">Campo obrigatório.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail Institucional *</label>
+          <input type="email" id="f-email" class="form-control" placeholder="joao@ugb.edu.br" />
+          <div class="field-error" id="e-email">E-mail inválido.</div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Matrícula *</label>
+            <input type="text" id="f-matricula" class="form-control" placeholder="10001" />
+            <div class="field-error" id="e-matricula">Matrícula obrigatória.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cargo</label>
+            <input type="text" id="f-cargo" class="form-control" placeholder="Porteiro" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Nível de Acesso *</label>
+            <select id="f-nivel" class="form-control">
+              <option value="operador">Operador</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="f-status-u" class="form-control">
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+        </div>
+        <div id="senha-group" class="form-group">
+          <label class="form-label">Senha *</label>
+          <input type="password" id="f-senha" class="form-control" placeholder="Mínimo 4 caracteres" />
+          <div class="field-error" id="e-senha">Senha deve ter pelo menos 4 caracteres.</div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="salvarUsuario()"><i class="fas fa-save"></i> Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <div class="confirm-icon"><i class="fas fa-user-times"></i></div>
+      <div class="confirm-title">Remover Usuário?</div>
+      <div class="confirm-msg">O usuário perderá todo o acesso ao sistema.</div>
+      <div class="confirm-btns">
+        <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmarExclusao()"><i class="fas fa-trash"></i> Remover</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/script.js"></script>
+  <script>
+    Auth.requireAuth();
+    document.getElementById('sidebar-container').innerHTML = renderSidebar('usuarios');
+    document.getElementById('topbar-container').innerHTML = renderTopbar('Gestão de Usuários', 'Gerencie colaboradores e operadores do sistema');
+
+    let usuarios = [...MockData.usuarios];
+    let editingId = null;
+    let deletingId = null;
+
+    function getNivelLabel(n) {
+      const map = { admin: 'Administrador', supervisor: 'Supervisor', operador: 'Operador' };
+      return map[n] || n;
+    }
+    function getNivelIcon(n) {
+      return { admin: 'fa-crown', supervisor: 'fa-star', operador: 'fa-user' }[n] || 'fa-user';
+    }
+
+    function getFiltered() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const nivel = document.getElementById('filter-nivel').value;
+      const status = document.getElementById('filter-status').value;
+      return usuarios.filter(u => {
+        const matchQ = !q || u.nome.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.matricula.includes(q);
+        const matchNivel = !nivel || u.nivel === nivel;
+        const matchStatus = !status || u.status === status;
+        return matchQ && matchNivel && matchStatus;
+      });
+    }
+
+    function renderTable() {
+      const data = getFiltered();
+      document.getElementById('count-info').textContent = `${data.length} usuário(s)`;
+      const tbody = document.getElementById('usuarios-tbody');
+      if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><p>Nenhum usuário encontrado.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.map(u => `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div class="user-avatar-table">${u.nome.charAt(0)}</div>
+              <span class="td-main">${u.nome}</span>
+            </div>
+          </td>
+          <td style="color:var(--text-secondary);">${u.email}</td>
+          <td><code style="font-size:0.8rem;color:var(--text-muted);">${u.matricula}</code></td>
+          <td>${u.cargo}</td>
+          <td>
+            <span class="nivel-badge nivel-${u.nivel}">
+              <i class="fas ${getNivelIcon(u.nivel)}"></i>
+              ${getNivelLabel(u.nivel)}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-${u.status==='ativo'?'success':'warning'}">
+              <i class="fas fa-${u.status==='ativo'?'check-circle':'pause-circle'}"></i>
+              ${u.status.charAt(0).toUpperCase()+u.status.slice(1)}
+            </span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-ghost btn-sm" onclick="editarUsuario(${u.id})" title="Editar"><i class="fas fa-pen"></i></button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleStatus(${u.id})" title="${u.status==='ativo'?'Desativar':'Ativar'}">
+                <i class="fas fa-${u.status==='ativo'?'ban':'check'}"></i>
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="excluirUsuario(${u.id})" title="Remover"><i class="fas fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openModal(id = null) {
+      editingId = id;
+      clearForm();
+      const senhaGroup = document.getElementById('senha-group');
+      if (id) {
+        const u = usuarios.find(x => x.id === id);
+        document.getElementById('modal-title').textContent = 'Editar Usuário';
+        document.getElementById('f-nome').value = u.nome;
+        document.getElementById('f-email').value = u.email;
+        document.getElementById('f-matricula').value = u.matricula;
+        document.getElementById('f-cargo').value = u.cargo;
+        document.getElementById('f-nivel').value = u.nivel;
+        document.getElementById('f-status-u').value = u.status;
+        senhaGroup.style.display = 'none'; // Password optional on edit
+      } else {
+        document.getElementById('modal-title').textContent = 'Novo Usuário';
+        senhaGroup.style.display = 'block';
+      }
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+      editingId = null;
+    }
+
+    function clearForm() {
+      ['nome','email','matricula','cargo','senha'].forEach(f => {
+        const el = document.getElementById('f-'+f);
+        if (el) el.value = '';
+        const err = document.getElementById('e-'+f);
+        if (err) err.classList.remove('show');
+      });
+      document.getElementById('f-nivel').value = 'operador';
+      document.getElementById('f-status-u').value = 'ativo';
+    }
+
+    function showFErr(field, show, msg) {
+      const el = document.getElementById('f-'+field);
+      const err = document.getElementById('e-'+field);
+      if (el) el.classList.toggle('invalid', show);
+      if (err) {
+        err.classList.toggle('show', show);
+        if (msg) err.textContent = msg;
+      }
+    }
+
+    function salvarUsuario() {
+      const nome = document.getElementById('f-nome').value.trim();
+      const email = document.getElementById('f-email').value.trim();
+      const matricula = document.getElementById('f-matricula').value.trim();
+      const cargo = document.getElementById('f-cargo').value.trim() || 'Não informado';
+      const nivel = document.getElementById('f-nivel').value;
+      const status = document.getElementById('f-status-u').value;
+      const senha = document.getElementById('f-senha').value;
+      let valid = true;
+
+      if (!nome) { showFErr('nome', true); valid = false; } else showFErr('nome', false);
+      if (!Utils.validateEmail(email)) { showFErr('email', true); valid = false; } else showFErr('email', false);
+      if (!matricula) { showFErr('matricula', true); valid = false; } else showFErr('matricula', false);
+      if (!editingId && senha.length < 4) { showFErr('senha', true); valid = false; } else showFErr('senha', false);
+
+      if (!valid) return;
+
+      // Duplicate check
+      const dup = usuarios.find(u => u.matricula === matricula && u.id !== editingId);
+      if (dup) { showFErr('matricula', true, 'Matrícula já cadastrada.'); return; }
+
+      if (editingId) {
+        const idx = usuarios.findIndex(u => u.id === editingId);
+        usuarios[idx] = { ...usuarios[idx], nome, email, matricula, cargo, nivel, status };
+        Toast.success('Usuário atualizado com sucesso!');
+      } else {
+        usuarios.push({ id: Date.now(), nome, email, matricula, cargo, nivel, status });
+        Toast.success('Usuário cadastrado com sucesso!');
+      }
+      closeModal();
+      renderTable();
+    }
+
+    function editarUsuario(id) { openModal(id); }
+
+    function toggleStatus(id) {
+      const idx = usuarios.findIndex(u => u.id === id);
+      usuarios[idx].status = usuarios[idx].status === 'ativo' ? 'inativo' : 'ativo';
+      renderTable();
+      Toast.info(`Usuário ${usuarios[idx].status === 'ativo' ? 'ativado' : 'desativado'}.`);
+    }
+
+    function excluirUsuario(id) {
+      deletingId = id;
+      document.getElementById('confirm-overlay').classList.add('open');
+    }
+    function closeConfirm() {
+      document.getElementById('confirm-overlay').classList.remove('open');
+      deletingId = null;
+    }
+    function confirmarExclusao() {
+      usuarios = usuarios.filter(u => u.id !== deletingId);
+      closeConfirm();
+      renderTable();
+      Toast.success('Usuário removido com sucesso!');
+    }
+
+    // Listeners
+    document.getElementById('search-input').addEventListener('input', renderTable);
+    document.getElementById('filter-nivel').addEventListener('change', renderTable);
+    document.getElementById('filter-status').addEventListener('change', renderTable);
+    document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+    document.getElementById('confirm-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+    renderTable();
+  </script>
+</body>
+</html>

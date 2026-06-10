@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatórios — RegiGate</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .filters-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .filters-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      align-items: end;
+    }
+    .filter-btns {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .results-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .results-info {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .results-info strong { color: var(--text-primary); font-family: var(--font-display); }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .summary-item {
+      background: var(--bg-input);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .summary-item .s-value {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .summary-item .s-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+
+    @media (max-width: 640px) {
+      .summary-row { grid-template-columns: 1fr 1fr; }
+      .filters-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div id="sidebar-container"></div>
+    <div class="main-content">
+      <div id="topbar-container"></div>
+      <main class="page-content">
+
+        <!-- Filters -->
+        <div class="filters-card fade-up">
+          <div class="filters-title"><i class="fas fa-filter"></i> Filtros de Relatório</div>
+          <div class="filters-grid">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Data inicial</label>
+              <input type="date" id="f-data-ini" class="form-control" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Data final</label>
+              <input type="date" id="f-data-fim" class="form-control" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Status</label>
+              <select id="f-status" class="form-control">
+                <option value="">Todos</option>
+                <option value="estacionado">Estacionados</option>
+                <option value="fora">Fora</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Período</label>
+              <select id="f-periodo" class="form-control">
+                <option value="">Qualquer horário</option>
+                <option value="manha">Manhã (06h–12h)</option>
+                <option value="tarde">Tarde (12h–18h)</option>
+                <option value="noite">Noite (18h–06h)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Placa</label>
+              <input type="text" id="f-placa" class="form-control" placeholder="ex: RJC-2024" />
+            </div>
+            <div class="filter-btns" style="margin:0;">
+              <button class="btn btn-primary" onclick="aplicarFiltros()" style="flex:1;">
+                <i class="fas fa-search"></i> Filtrar
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="limparFiltros()" title="Limpar">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-row fade-up-1" id="summary-row"></div>
+
+        <!-- Results -->
+        <div class="card fade-up-2">
+          <div class="card-header" style="padding:20px 24px 0;">
+            <div class="results-bar" style="width:100%;margin:0 0 16px;">
+              <span class="results-info">Exibindo <strong id="count-result">0</strong> registro(s)</span>
+              <button class="btn btn-success btn-sm" onclick="exportarCSV()">
+                <i class="fas fa-file-csv"></i> Exportar CSV
+              </button>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Placa</th>
+                  <th>Tipo</th>
+                  <th>Data</th>
+                  <th>Horário</th>
+                  <th>Período</th>
+                  <th>Permanência</th>
+                  <th>Proprietário</th>
+                  <th>Status Veículo</th>
+                </tr>
+              </thead>
+              <tbody id="relatorio-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/script.js"></script>
+  <script>
+    Auth.requireAuth();
+    document.getElementById('sidebar-container').innerHTML = renderSidebar('relatorios');
+    document.getElementById('topbar-container').innerHTML = renderTopbar('Relatórios Operacionais', 'Extraia e analise os dados do estacionamento');
+
+    // Default dates
+    const hoje = new Date();
+    const semAntras = new Date(); semAntras.setDate(hoje.getDate() - 7);
+    document.getElementById('f-data-ini').value = semAntras.toISOString().slice(0,10);
+    document.getElementById('f-data-fim').value = hoje.toISOString().slice(0,10);
+
+    let filteredData = [];
+
+    function getPeriodo(dateStr) {
+      const h = new Date(dateStr).getHours();
+      if (h >= 6 && h < 12) return 'manha';
+      if (h >= 12 && h < 18) return 'tarde';
+      return 'noite';
+    }
+
+    function getPeriodoLabel(p) {
+      return { manha: '🌤 Manhã', tarde: '☀️ Tarde', noite: '🌙 Noite' }[p] || '—';
+    }
+
+    function aplicarFiltros() {
+      const dataIni = document.getElementById('f-data-ini').value;
+      const dataFim = document.getElementById('f-data-fim').value;
+      const status = document.getElementById('f-status').value;
+      const periodo = document.getElementById('f-periodo').value;
+      const placa = document.getElementById('f-placa').value.trim().toUpperCase();
+
+      // Validate dates
+      if (dataIni && dataFim && dataIni > dataFim) {
+        Toast.error('A data inicial não pode ser maior que a data final.');
+        return;
+      }
+
+      filteredData = MockData.movimentacoes.filter(m => {
+        const mDate = m.horario.slice(0,10);
+        const matchDataIni = !dataIni || mDate >= dataIni;
+        const matchDataFim = !dataFim || mDate <= dataFim;
+        const matchPlaca = !placa || m.placa.includes(placa);
+        const matchPeriodo = !periodo || getPeriodo(m.horario) === periodo;
+
+        // Status filter: check vehicle status
+        let matchStatus = true;
+        if (status) {
+          const v = MockData.veiculos.find(vv => vv.placa === m.placa);
+          matchStatus = v ? v.status === status : false;
+        }
+
+        return matchDataIni && matchDataFim && matchPlaca && matchPeriodo && matchStatus;
+      }).sort((a,b) => new Date(b.horario) - new Date(a.horario));
+
+      renderSummary();
+      renderTable();
+      Toast.info(`${filteredData.length} registro(s) encontrado(s).`);
+    }
+
+    function limparFiltros() {
+      document.getElementById('f-data-ini').value = semAntras.toISOString().slice(0,10);
+      document.getElementById('f-data-fim').value = hoje.toISOString().slice(0,10);
+      document.getElementById('f-status').value = '';
+      document.getElementById('f-periodo').value = '';
+      document.getElementById('f-placa').value = '';
+      aplicarFiltros();
+    }
+
+    function renderSummary() {
+      const entradas = filteredData.filter(m => m.tipo === 'entrada').length;
+      const saidas = filteredData.filter(m => m.tipo === 'saida').length;
+      const placasUnicas = new Set(filteredData.map(m => m.placa)).size;
+
+      document.getElementById('summary-row').innerHTML = `
+        <div class="summary-item">
+          <div class="s-value" style="color:var(--success);">${entradas}</div>
+          <div class="s-label">Entradas</div>
+        </div>
+        <div class="summary-item">
+          <div class="s-value" style="color:var(--danger);">${saidas}</div>
+          <div class="s-label">Saídas</div>
+        </div>
+        <div class="summary-item">
+          <div class="s-value" style="color:var(--accent);">${placasUnicas}</div>
+          <div class="s-label">Placas Únicas</div>
+        </div>
+      `;
+    }
+
+    function renderTable() {
+      document.getElementById('count-result').textContent = filteredData.length;
+      const tbody = document.getElementById('relatorio-tbody');
+      if (!filteredData.length) {
+        tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-file-alt"></i><p>Nenhum resultado para os filtros aplicados.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = filteredData.map((m, i) => {
+        const v = MockData.veiculos.find(vv => vv.placa === m.placa);
+        const periodo = getPeriodo(m.horario);
+        return `
+          <tr>
+            <td style="color:var(--text-muted);font-size:0.78rem;">${i+1}</td>
+            <td><span class="plate">${m.placa}</span></td>
+            <td>
+              <span class="badge badge-${m.tipo==='entrada'?'success':'danger'}">
+                <i class="fas fa-${m.tipo==='entrada'?'sign-in-alt':'sign-out-alt'}"></i>
+                ${m.tipo.charAt(0).toUpperCase()+m.tipo.slice(1)}
+              </span>
+            </td>
+            <td>${Utils.formatDate(m.horario)}</td>
+            <td class="td-main">${Utils.formatTime(m.horario)}</td>
+            <td>${getPeriodoLabel(periodo)}</td>
+            <td style="color:var(--warning);font-weight:600;">${m.tempo || (m.tipo==='entrada' ? Utils.calcPermanencia(m.horario) : '—')}</td>
+            <td>${v ? v.proprietario : '<span style="color:var(--text-muted)">Não cadastrado</span>'}</td>
+            <td>
+              ${v ? `<span class="badge badge-${v.status==='estacionado'?'success':'info'}">${v.status==='estacionado'?'Estacionado':'Fora'}</span>` : '—'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportarCSV() {
+      if (!filteredData.length) { Toast.warning('Nenhum dado para exportar.'); return; }
+      const exportData = filteredData.map((m, i) => {
+        const v = MockData.veiculos.find(vv => vv.placa === m.placa);
+        return {
+          Num: i+1,
+          Placa: m.placa,
+          Tipo: m.tipo,
+          Data: Utils.formatDate(m.horario),
+          Horario: Utils.formatTime(m.horario),
+          Periodo: getPeriodo(m.horario),
+          Permanencia: m.tempo || (m.tipo==='entrada' ? Utils.calcPermanencia(m.horario) : ''),
+          Proprietario: v ? v.proprietario : '',
+          StatusVeiculo: v ? v.status : '',
+        };
+      });
+      Utils.exportCSV(exportData, `relatorio_regigate_${new Date().toISOString().slice(0,10)}.csv`);
+      Toast.success('Relatório exportado com sucesso!');
+    }
+
+    // Init
+    aplicarFiltros();
+  </script>
+</body>
+</html>

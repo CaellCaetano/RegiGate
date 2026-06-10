@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — RegiGate</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .vagas-bar-wrapper {
+      margin-top: 12px;
+    }
+    .vagas-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .vagas-bar {
+      height: 8px;
+      background: var(--bg-input);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .vagas-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s ease;
+      background: linear-gradient(90deg, var(--accent), var(--info));
+    }
+    .vagas-fill.warning { background: linear-gradient(90deg, var(--warning), var(--danger)); }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .recent-list { display: flex; flex-direction: column; gap: 10px; }
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      transition: background var(--transition);
+    }
+    .recent-item:hover { background: var(--bg-hover); }
+
+    .move-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+    .move-icon.entrada { background: var(--success-soft); color: var(--success); }
+    .move-icon.saida { background: var(--danger-soft); color: var(--danger); }
+
+    .recent-item .info { flex: 1; }
+    .recent-item .info .placa-text {
+      font-weight: 700;
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      letter-spacing: 0.04em;
+    }
+    .recent-item .info .time-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .gauge-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 0;
+    }
+    .gauge-circle {
+      position: relative;
+      width: 140px;
+      height: 140px;
+    }
+    .gauge-circle svg { transform: rotate(-90deg); }
+    .gauge-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .gauge-num {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+    .gauge-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .gauge-label {
+      margin-top: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .chart-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div id="sidebar-container"></div>
+    <div class="main-content">
+      <div id="topbar-container"></div>
+      <main class="page-content">
+
+        <!-- Stats -->
+        <div class="stats-grid" id="stats-grid"></div>
+
+        <!-- Charts Row -->
+        <div class="chart-grid">
+          <div class="card fade-up-1">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-chart-bar" style="color:var(--accent);margin-right:8px;"></i>Fluxo de Entradas e Saídas — Hoje</span>
+            </div>
+            <div class="card-body">
+              <canvas id="fluxoChart" height="100"></canvas>
+            </div>
+          </div>
+
+          <div class="card fade-up-2">
+            <div class="card-header">
+              <span class="card-title"><i class="fas fa-parking" style="color:var(--info);margin-right:8px;"></i>Ocupação Atual</span>
+            </div>
+            <div class="card-body">
+              <div class="gauge-wrapper" id="gauge-container"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent movimentações -->
+        <div class="card fade-up-3">
+          <div class="card-header mb-16">
+            <span class="card-title"><i class="fas fa-history" style="color:var(--warning);margin-right:8px;"></i>Últimas Movimentações</span>
+            <a href="movimentacoes.html" class="btn btn-ghost btn-sm">Ver todas <i class="fas fa-arrow-right"></i></a>
+          </div>
+          <div class="card-body" style="padding-top:0;">
+            <div class="recent-list" id="recent-list"></div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/script.js"></script>
+  <script>
+    Auth.requireAuth();
+
+    // Inject sidebar & topbar
+    document.getElementById('sidebar-container').innerHTML = renderSidebar('dashboard');
+    document.getElementById('topbar-container').innerHTML = renderTopbar('Dashboard', 'Visão geral do estacionamento em tempo real');
+
+    // Stats
+    function renderStats() {
+      const s = MockData.getStats();
+      const percent = Math.round((s.estacionados / s.totalVagas) * 100);
+      const statusColor = percent >= 90 ? 'var(--danger)' : percent >= 70 ? 'var(--warning)' : 'var(--success)';
+
+      document.getElementById('stats-grid').innerHTML = `
+        <div class="stat-card fade-up">
+          <div class="stat-info">
+            <div class="stat-label">Veículos no Estacionamento</div>
+            <div class="stat-value">${s.estacionados}</div>
+            <div class="stat-change up"><i class="fas fa-circle" style="font-size:6px;"></i> de ${s.totalVagas} vagas total</div>
+          </div>
+          <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">
+            <i class="fas fa-car"></i>
+          </div>
+        </div>
+        <div class="stat-card fade-up-1">
+          <div class="stat-info">
+            <div class="stat-label">Entradas Hoje</div>
+            <div class="stat-value">${s.entradasHoje}</div>
+            <div class="stat-change up"><i class="fas fa-arrow-up"></i> Fluxo do dia</div>
+          </div>
+          <div class="stat-icon" style="background:var(--success-soft);color:var(--success);">
+            <i class="fas fa-sign-in-alt"></i>
+          </div>
+        </div>
+        <div class="stat-card fade-up-2">
+          <div class="stat-info">
+            <div class="stat-label">Saídas Hoje</div>
+            <div class="stat-value">${s.saidasHoje}</div>
+            <div class="stat-change down"><i class="fas fa-arrow-down"></i> Fluxo do dia</div>
+          </div>
+          <div class="stat-icon" style="background:var(--danger-soft);color:var(--danger);">
+            <i class="fas fa-sign-out-alt"></i>
+          </div>
+        </div>
+        <div class="stat-card fade-up-3">
+          <div class="stat-info">
+            <div class="stat-label">Vagas Disponíveis</div>
+            <div class="stat-value" style="color:${statusColor};">${s.vagasDisponiveis}</div>
+            <div class="vagas-bar-wrapper">
+              <div class="vagas-bar-label">
+                <span>0</span><span>Ocupação: ${percent}%</span><span>${s.totalVagas}</span>
+              </div>
+              <div class="vagas-bar">
+                <div class="vagas-fill ${percent>=80?'warning':''}" id="vagas-fill" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-icon" style="background:var(--warning-soft);color:var(--warning);">
+            <i class="fas fa-map-marker-alt"></i>
+          </div>
+        </div>
+      `;
+      // Animate bar
+      setTimeout(() => {
+        const fill = document.getElementById('vagas-fill');
+        if (fill) fill.style.width = percent + '%';
+      }, 300);
+    }
+
+    // Gauge
+    function renderGauge() {
+      const s = MockData.getStats();
+      const pct = s.estacionados / s.totalVagas;
+      const r = 54; const circ = 2 * Math.PI * r;
+      const dash = circ * pct;
+      const color = pct >= 0.9 ? '#EF4444' : pct >= 0.7 ? '#F59E0B' : '#3B82F6';
+      document.getElementById('gauge-container').innerHTML = `
+        <div class="gauge-circle">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--bg-input)" stroke-width="12"/>
+            <circle cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="12"
+              stroke-dasharray="${dash.toFixed(1)} ${(circ - dash).toFixed(1)}"
+              stroke-linecap="round" style="transition:stroke-dasharray 1s ease;"/>
+          </svg>
+          <div class="gauge-text">
+            <div class="gauge-num">${s.estacionados}</div>
+            <div class="gauge-sub">ocupadas</div>
+          </div>
+        </div>
+        <div class="gauge-label">${s.vagasDisponiveis} vagas livres<br><span style="color:${color};font-weight:700;">${Math.round(pct*100)}% ocupado</span></div>
+      `;
+    }
+
+    // Chart
+    function renderChart() {
+      const ctx = document.getElementById('fluxoChart').getContext('2d');
+      const labels = ['06h','07h','08h','09h','10h','11h','12h','13h','14h','15h','16h','17h'];
+      const entradas = [0,1,3,2,2,1,0,1,0,2,1,0];
+      const saidas =   [0,0,1,1,2,2,1,0,1,1,2,1];
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+      const textColor = isDark ? '#94A3B8' : '#5A6A7A';
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Entradas', data: entradas, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 6, borderSkipped: false },
+            { label: 'Saídas',   data: saidas,   backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 6, borderSkipped: false }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: textColor, font: { family: 'DM Sans' } } } },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: textColor } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    // Recent list
+    function renderRecent() {
+      const recent = [...MockData.movimentacoes].sort((a,b) => new Date(b.horario) - new Date(a.horario)).slice(0,6);
+      const container = document.getElementById('recent-list');
+      container.innerHTML = recent.map(m => `
+        <div class="recent-item">
+          <div class="move-icon ${m.tipo}">
+            <i class="fas fa-${m.tipo === 'entrada' ? 'sign-in-alt' : 'sign-out-alt'}"></i>
+          </div>
+          <div class="info">
+            <div class="placa-text">${m.placa}</div>
+            <div class="time-text">${Utils.formatDateTime(m.horario)}</div>
+          </div>
+          <span class="badge badge-${m.tipo === 'entrada' ? 'success' : 'danger'}">
+            ${m.tipo.charAt(0).toUpperCase() + m.tipo.slice(1)}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    renderStats();
+    renderGauge();
+    renderChart();
+    renderRecent();
+  </script>
+</body>
+</html>

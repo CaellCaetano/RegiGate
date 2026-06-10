@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Veículos — RegiGate</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .filter-select {
+      padding: 9px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .filter-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    .action-btns { display: flex; gap: 6px; }
+
+    /* Detail modal */
+    .detail-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; }
+    .detail-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); min-width: 110px; padding-top: 2px; }
+    .detail-value { font-size: 0.875rem; color: var(--text-primary); font-weight: 500; }
+
+    .confirm-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; visibility: hidden;
+      transition: all var(--transition);
+    }
+    .confirm-overlay.open { opacity: 1; visibility: visible; }
+    .confirm-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      max-width: 380px; width: 90%;
+      text-align: center;
+      transform: scale(0.95);
+      transition: transform var(--transition);
+    }
+    .confirm-overlay.open .confirm-box { transform: scale(1); }
+    .confirm-icon { font-size: 2.5rem; margin-bottom: 12px; color: var(--danger); }
+    .confirm-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+    .confirm-msg { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+
+    .count-info { font-size: 0.8rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div id="sidebar-container"></div>
+    <div class="main-content">
+      <div id="topbar-container"></div>
+      <main class="page-content">
+
+        <div class="toolbar fade-up">
+          <div class="toolbar-left">
+            <div class="search-bar">
+              <i class="fas fa-search"></i>
+              <input type="text" id="search-input" placeholder="Buscar por placa ou proprietário..." />
+            </div>
+            <select class="filter-select" id="filter-status">
+              <option value="">Todos os status</option>
+              <option value="estacionado">Estacionados</option>
+              <option value="fora">Fora</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="openModal()">
+            <i class="fas fa-plus"></i> Cadastrar Veículo
+          </button>
+        </div>
+
+        <div class="card fade-up-1">
+          <div class="card-header" style="padding:20px 24px 16px;">
+            <span class="card-title"><i class="fas fa-car" style="color:var(--accent);margin-right:8px;"></i>Veículos Cadastrados</span>
+            <span class="count-info" id="count-info"></span>
+          </div>
+          <div class="table-wrapper">
+            <table id="veiculos-table">
+              <thead>
+                <tr>
+                  <th>Placa</th>
+                  <th>Modelo</th>
+                  <th>Cor</th>
+                  <th>Proprietário</th>
+                  <th>Matrícula</th>
+                  <th>Status</th>
+                  <th>Permanência</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="veiculos-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Cadastro/Edição -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modal-title">Cadastrar Veículo</span>
+        <div class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></div>
+      </div>
+      <div class="modal-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Placa *</label>
+            <input type="text" id="f-placa" class="form-control" placeholder="RJA-0000" maxlength="8" />
+            <div class="field-error" id="e-placa">Formato inválido (ex: RJA-0000)</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cor</label>
+            <input type="text" id="f-cor" class="form-control" placeholder="Prata" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Modelo *</label>
+          <input type="text" id="f-modelo" class="form-control" placeholder="Toyota Corolla" />
+          <div class="field-error" id="e-modelo">Campo obrigatório.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proprietário *</label>
+          <input type="text" id="f-proprietario" class="form-control" placeholder="Nome completo" />
+          <div class="field-error" id="e-proprietario">Campo obrigatório.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Matrícula *</label>
+          <input type="text" id="f-matricula" class="form-control" placeholder="20240001" />
+          <div class="field-error" id="e-matricula">Campo obrigatório.</div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="salvarVeiculo()"><i class="fas fa-save"></i> Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalhes -->
+  <div class="modal-overlay" id="detail-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Detalhes do Veículo</span>
+        <div class="modal-close" onclick="closeDetail()"><i class="fas fa-times"></i></div>
+      </div>
+      <div class="modal-body" id="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <div class="confirm-icon"><i class="fas fa-trash-alt"></i></div>
+      <div class="confirm-title">Excluir Veículo?</div>
+      <div class="confirm-msg">Esta ação não pode ser desfeita. O veículo será removido permanentemente.</div>
+      <div class="confirm-btns">
+        <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmarExclusao()"><i class="fas fa-trash"></i> Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/script.js"></script>
+  <script>
+    Auth.requireAuth();
+    document.getElementById('sidebar-container').innerHTML = renderSidebar('veiculos');
+    document.getElementById('topbar-container').innerHTML = renderTopbar('Controle de Veículos', 'Gerencie todos os veículos cadastrados');
+
+    let editingId = null;
+    let deletingId = null;
+    let veiculos = [...MockData.veiculos];
+
+    function getFiltered() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const st = document.getElementById('filter-status').value;
+      return veiculos.filter(v => {
+        const matchQ = !q || v.placa.toLowerCase().includes(q) || v.proprietario.toLowerCase().includes(q);
+        const matchSt = !st || v.status === st;
+        return matchQ && matchSt;
+      });
+    }
+
+    function renderTable() {
+      const data = getFiltered();
+      document.getElementById('count-info').textContent = `${data.length} veículo(s)`;
+      const tbody = document.getElementById('veiculos-tbody');
+      if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-car"></i><p>Nenhum veículo encontrado.</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.map(v => `
+        <tr>
+          <td><span class="plate">${v.placa}</span></td>
+          <td class="td-main">${v.modelo}</td>
+          <td>${v.cor}</td>
+          <td>${v.proprietario}</td>
+          <td><code style="font-size:0.8rem;color:var(--text-muted);">${v.matricula}</code></td>
+          <td>
+            <span class="badge badge-${v.status === 'estacionado' ? 'success' : 'info'}">
+              <i class="fas fa-${v.status === 'estacionado' ? 'parking' : 'road'}"></i>
+              ${v.status === 'estacionado' ? 'Estacionado' : 'Fora'}
+            </span>
+          </td>
+          <td>${v.status === 'estacionado' ? Utils.calcPermanencia(v.entrada) : '—'}</td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-ghost btn-sm" onclick="verDetalhes(${v.id})" title="Detalhes"><i class="fas fa-eye"></i></button>
+              <button class="btn btn-ghost btn-sm" onclick="editarVeiculo(${v.id})" title="Editar"><i class="fas fa-pen"></i></button>
+              <button class="btn btn-danger btn-sm" onclick="excluirVeiculo(${v.id})" title="Excluir"><i class="fas fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ---- CRUD ----
+    function openModal(id = null) {
+      editingId = id;
+      clearForm();
+      if (id) {
+        const v = veiculos.find(x => x.id === id);
+        document.getElementById('modal-title').textContent = 'Editar Veículo';
+        document.getElementById('f-placa').value = v.placa;
+        document.getElementById('f-modelo').value = v.modelo;
+        document.getElementById('f-cor').value = v.cor;
+        document.getElementById('f-proprietario').value = v.proprietario;
+        document.getElementById('f-matricula').value = v.matricula;
+      } else {
+        document.getElementById('modal-title').textContent = 'Cadastrar Veículo';
+      }
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+      editingId = null;
+    }
+
+    function clearForm() {
+      ['placa','modelo','cor','proprietario','matricula'].forEach(f => {
+        document.getElementById('f-' + f).value = '';
+        document.getElementById('f-' + f).classList.remove('invalid');
+        const err = document.getElementById('e-' + f);
+        if (err) err.style.display = 'none';
+      });
+    }
+
+    function salvarVeiculo() {
+      const placa = document.getElementById('f-placa').value.trim().toUpperCase();
+      const modelo = document.getElementById('f-modelo').value.trim();
+      const cor = document.getElementById('f-cor').value.trim() || 'Não informado';
+      const proprietario = document.getElementById('f-proprietario').value.trim();
+      const matricula = document.getElementById('f-matricula').value.trim();
+      let valid = true;
+
+      // Validate
+      if (!Utils.validatePlaca(placa)) {
+        showFieldError('placa', true);
+        valid = false;
+      } else { showFieldError('placa', false); }
+
+      if (!modelo) { showFieldError('modelo', true); valid = false; }
+      else { showFieldError('modelo', false); }
+
+      if (!proprietario) { showFieldError('proprietario', true); valid = false; }
+      else { showFieldError('proprietario', false); }
+
+      if (!matricula) { showFieldError('matricula', true); valid = false; }
+      else { showFieldError('matricula', false); }
+
+      if (!valid) return;
+
+      // Check placa duplicate
+      const dup = veiculos.find(v => v.placa === placa && v.id !== editingId);
+      if (dup) { showFieldError('placa', true, 'Placa já cadastrada.'); return; }
+
+      if (editingId) {
+        const idx = veiculos.findIndex(v => v.id === editingId);
+        veiculos[idx] = { ...veiculos[idx], placa, modelo, cor, proprietario, matricula };
+        Toast.success('Veículo atualizado com sucesso!');
+      } else {
+        veiculos.push({ id: Date.now(), placa, modelo, cor, proprietario, matricula, status: 'fora', entrada: null });
+        Toast.success('Veículo cadastrado com sucesso!');
+      }
+      closeModal();
+      renderTable();
+    }
+
+    function showFieldError(field, show, msg) {
+      const input = document.getElementById('f-' + field);
+      const err = document.getElementById('e-' + field);
+      if (input) input.classList.toggle('invalid', show);
+      if (err) {
+        err.style.display = show ? 'block' : 'none';
+        if (msg) err.textContent = msg;
+      }
+    }
+
+    function editarVeiculo(id) { openModal(id); }
+
+    function excluirVeiculo(id) {
+      deletingId = id;
+      document.getElementById('confirm-overlay').classList.add('open');
+    }
+    function closeConfirm() {
+      document.getElementById('confirm-overlay').classList.remove('open');
+      deletingId = null;
+    }
+    function confirmarExclusao() {
+      veiculos = veiculos.filter(v => v.id !== deletingId);
+      closeConfirm();
+      renderTable();
+      Toast.success('Veículo removido com sucesso!');
+    }
+
+    function verDetalhes(id) {
+      const v = veiculos.find(x => x.id === id);
+      const mov = MockData.movimentacoes.filter(m => m.placa === v.placa);
+      document.getElementById('detail-body').innerHTML = `
+        <div class="detail-row"><span class="detail-label">Placa</span><span class="plate">${v.placa}</span></div>
+        <div class="detail-row"><span class="detail-label">Modelo</span><span class="detail-value">${v.modelo}</span></div>
+        <div class="detail-row"><span class="detail-label">Cor</span><span class="detail-value">${v.cor}</span></div>
+        <div class="detail-row"><span class="detail-label">Proprietário</span><span class="detail-value">${v.proprietario}</span></div>
+        <div class="detail-row"><span class="detail-label">Matrícula</span><span class="detail-value">${v.matricula}</span></div>
+        <div class="detail-row">
+          <span class="detail-label">Status</span>
+          <span class="badge badge-${v.status === 'estacionado' ? 'success' : 'info'}">${v.status === 'estacionado' ? 'Estacionado' : 'Fora'}</span>
+        </div>
+        ${v.status === 'estacionado' ? `<div class="detail-row"><span class="detail-label">Permanência</span><span class="detail-value">${Utils.calcPermanencia(v.entrada)}</span></div>` : ''}
+        <div class="divider"></div>
+        <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Histórico (${mov.length} movimentações)</div>
+        ${mov.length ? mov.slice(-4).reverse().map(m => `
+          <div class="recent-item" style="margin-bottom:8px;">
+            <div class="move-icon ${m.tipo}"><i class="fas fa-${m.tipo==='entrada'?'sign-in-alt':'sign-out-alt'}"></i></div>
+            <div class="info">
+              <div class="placa-text" style="font-size:0.8rem;">${m.tipo.charAt(0).toUpperCase()+m.tipo.slice(1)}</div>
+              <div class="time-text">${Utils.formatDateTime(m.horario)}</div>
+            </div>
+            ${m.tempo ? `<span class="badge badge-info">${m.tempo}</span>` : ''}
+          </div>
+        `).join('') : '<div style="font-size:0.8rem;color:var(--text-muted);">Nenhuma movimentação.</div>'}
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+          <button class="btn btn-ghost" onclick="closeDetail()">Fechar</button>
+          <button class="btn btn-primary btn-sm" onclick="closeDetail();openModal(${v.id})"><i class="fas fa-pen"></i> Editar</button>
+        </div>
+      `;
+      document.getElementById('detail-overlay').classList.add('open');
+    }
+    function closeDetail() { document.getElementById('detail-overlay').classList.remove('open'); }
+
+    // Search & filter listeners
+    document.getElementById('search-input').addEventListener('input', renderTable);
+    document.getElementById('filter-status').addEventListener('change', renderTable);
+
+    // Close modals on overlay click
+    document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+    document.getElementById('detail-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetail(); });
+    document.getElementById('confirm-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+    // Placa mask
+    document.getElementById('f-placa').addEventListener('input', function() {
+      let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+      if (v.length > 3) v = v.slice(0,3) + '-' + v.slice(3,7);
+      this.value = v;
+    });
+
+    renderTable();
+  </script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — RegiGate</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-primary);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Background grid effect */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.4;
+      z-index: 0;
+    }
+
+    /* Glowing orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+      pointer-events: none;
+    }
+    .orb-1 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(26,86,232,0.25), transparent 70%);
+      top: -100px; left: -100px;
+      animation: orbFloat 8s ease-in-out infinite alternate;
+    }
+    .orb-2 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(16,185,129,0.15), transparent 70%);
+      bottom: -80px; right: -80px;
+      animation: orbFloat 10s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes orbFloat {
+      from { transform: translate(0,0) scale(1); }
+      to { transform: translate(30px,20px) scale(1.1); }
+    }
+
+    /* Theme toggle at top right */
+    .login-theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    /* Login card */
+    .login-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      padding: 16px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-logo .logo-circle {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--accent), #06B6D4);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 16px;
+      box-shadow: 0 8px 24px rgba(26,86,232,0.4);
+    }
+
+    .login-logo h1 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.03em;
+    }
+
+    .login-logo p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .error-box {
+      background: var(--danger-soft);
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      font-size: 0.85rem;
+      color: var(--danger);
+      display: none;
+    }
+    .error-box.show { display: flex; }
+
+    .input-wrapper {
+      position: relative;
+    }
+    .input-wrapper i.input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+    .input-wrapper .form-control {
+      padding-left: 40px;
+    }
+    .input-wrapper .toggle-pw {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: color var(--transition);
+    }
+    .input-wrapper .toggle-pw:hover { color: var(--accent); }
+
+    .login-btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--accent), #06B6D4);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(26,86,232,0.35);
+    }
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(26,86,232,0.45);
+    }
+    .login-btn:active { transform: translateY(0); }
+    .login-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+    .login-hint {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .login-hint strong { color: var(--text-secondary); }
+
+    .field-error {
+      font-size: 0.75rem;
+      color: var(--danger);
+      margin-top: 4px;
+      display: none;
+    }
+    .field-error.show { display: block; }
+    .form-control.invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px var(--danger-soft);
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div class="login-theme-toggle">
+    <span id="theme-label">🌙</span>
+    <div class="theme-toggle" id="theme-toggle" title="Alternar tema"></div>
+  </div>
+
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="logo.png" alt="RegiGate" style="width: 90px; height: 90px; object-fit: contain; margin: 0 auto 12px; display: block;" />
+        <h1>RegiGate</h1>
+        <p>Sistema Inteligente de Estacionamento</p>
+      </div>
+
+      <div class="error-box" id="error-box">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="error-msg">Credenciais inválidas.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">E-mail institucional</label>
+        <div class="input-wrapper">
+          <i class="fas fa-envelope input-icon"></i>
+          <input type="email" id="email" class="form-control" placeholder="admin@ugb.edu.br" autocomplete="email" />
+        </div>
+        <div class="field-error" id="email-error">Insira um e-mail válido.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="senha">Senha</label>
+        <div class="input-wrapper">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="senha" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+          <i class="fas fa-eye toggle-pw" id="toggle-pw"></i>
+        </div>
+        <div class="field-error" id="senha-error">Senha deve ter pelo menos 4 caracteres.</div>
+      </div>
+
+      <button class="login-btn" id="login-btn">
+        <i class="fas fa-sign-in-alt"></i> Entrar no Painel
+      </button>
+
+      <p class="login-hint">
+        Demo: qualquer e-mail válido + senha com 4+ caracteres.<br>
+        <strong>admin@ugb.edu.br / 1234</strong>
+      </p>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/script.js"></script>
+  <script>
+    // Redirecionar se já logado
+    if (Auth.isLoggedIn()) {
+      window.location.href = 'pages/dashboard.html';
+    }
+
+    // Toggle senha visível
+    document.getElementById('toggle-pw').addEventListener('click', function() {
+      const input = document.getElementById('senha');
+      const isText = input.type === 'text';
+      input.type = isText ? 'password' : 'text';
+      this.className = isText ? 'fas fa-eye toggle-pw' : 'fas fa-eye-slash toggle-pw';
+    });
+
+    // Submit com Enter
+    document.getElementById('senha').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    document.getElementById('login-btn').addEventListener('click', doLogin);
+
+    function doLogin() {
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+      let valid = true;
+
+      // Clear previous errors
+      document.getElementById('email').classList.remove('invalid');
+      document.getElementById('senha').classList.remove('invalid');
+      document.getElementById('email-error').classList.remove('show');
+      document.getElementById('senha-error').classList.remove('show');
+      document.getElementById('error-box').classList.remove('show');
+
+      // Validate
+      if (!Utils.validateEmail(email)) {
+        document.getElementById('email').classList.add('invalid');
+        document.getElementById('email-error').classList.add('show');
+        valid = false;
+      }
+      if (senha.length < 4) {
+        document.getElementById('senha').classList.add('invalid');
+        document.getElementById('senha-error').classList.add('show');
+        valid = false;
+      }
+      if (!valid) return;
+
+      // Loading
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Autenticando...';
+
+      setTimeout(() => {
+        if (Auth.login(email, senha)) {
+          Toast.success('Bem-vindo ao RegiGate!');
+          setTimeout(() => window.location.href = 'pages/dashboard.html', 800);
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar no Painel';
+          document.getElementById('error-msg').textContent = 'Credenciais inválidas. Tente novamente.';
+          document.getElementById('error-box').classList.add('show');
+        }
+      }, 900);
+    }
+  </script>
+</body>
+</html>

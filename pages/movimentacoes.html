@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entradas e Saídas — RegiGate</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .toolbar-left { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .filter-select {
+      padding: 9px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .mov-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      overflow: hidden;
+      transition: all var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    .mov-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+    .mov-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mov-card-header.entrada { border-left: 4px solid var(--success); }
+    .mov-card-header.saida   { border-left: 4px solid var(--danger); }
+
+    .mov-placa {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: 0.06em;
+    }
+
+    .mov-card-body {
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mov-info-item { display: flex; flex-direction: column; gap: 2px; }
+    .mov-info-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .mov-info-value { font-size: 0.85rem; color: var(--text-primary); font-weight: 500; }
+
+    .mov-img {
+      width: 100%; height: 120px;
+      background: var(--bg-input);
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      gap: 8px;
+      border: 1px dashed var(--border-input);
+    }
+
+    .mov-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--success);
+      font-weight: 600;
+    }
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.5; transform:scale(1.3); }
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-input);
+      border-radius: var(--radius);
+      padding: 4px;
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 7px 18px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .tab-btn.active {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .count-pill {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 20px; height: 20px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0 6px;
+      margin-left: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div id="sidebar-container"></div>
+    <div class="main-content">
+      <div id="topbar-container"></div>
+      <main class="page-content">
+
+        <!-- Toolbar -->
+        <div class="toolbar fade-up">
+          <div class="toolbar-left">
+            <div class="tabs" id="tipo-tabs">
+              <button class="tab-btn active" data-tipo="" onclick="setTipo(this,'')">Todos <span class="count-pill" id="cnt-all">0</span></button>
+              <button class="tab-btn" data-tipo="entrada" onclick="setTipo(this,'entrada')">Entradas <span class="count-pill" id="cnt-entrada">0</span></button>
+              <button class="tab-btn" data-tipo="saida" onclick="setTipo(this,'saida')">Saídas <span class="count-pill" id="cnt-saida">0</span></button>
+            </div>
+            <div class="search-bar">
+              <i class="fas fa-search"></i>
+              <input type="text" id="search-input" placeholder="Buscar placa..." />
+            </div>
+          </div>
+          <div class="live-indicator">
+            <div class="live-dot"></div>
+            Atualizado ao carregar
+          </div>
+        </div>
+
+        <!-- Cards grid -->
+        <div class="mov-grid" id="mov-grid"></div>
+
+        <div id="empty-state" style="display:none;">
+          <div class="empty-state"><i class="fas fa-exchange-alt"></i><p>Nenhuma movimentação encontrada.</p></div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="../js/script.js"></script>
+  <script>
+    Auth.requireAuth();
+    document.getElementById('sidebar-container').innerHTML = renderSidebar('movimentacoes');
+    document.getElementById('topbar-container').innerHTML = renderTopbar('Controle de Entradas e Saídas', 'Monitoramento em tempo real das movimentações');
+
+    let tipoFiltro = '';
+
+    function setTipo(btn, tipo) {
+      tipoFiltro = tipo;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderMovs();
+    }
+
+    function getFiltered() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      return MockData.movimentacoes.filter(m => {
+        const matchTipo = !tipoFiltro || m.tipo === tipoFiltro;
+        const matchQ = !q || m.placa.toLowerCase().includes(q);
+        return matchTipo && matchQ;
+      }).sort((a,b) => new Date(b.horario) - new Date(a.horario));
+    }
+
+    function calcTempo(m) {
+      if (m.tempo) return m.tempo;
+      if (m.tipo === 'entrada') {
+        // Still parked
+        return Utils.calcPermanencia(m.horario);
+      }
+      return '—';
+    }
+
+    function renderMovs() {
+      const all = MockData.movimentacoes;
+      document.getElementById('cnt-all').textContent    = all.length;
+      document.getElementById('cnt-entrada').textContent = all.filter(m=>m.tipo==='entrada').length;
+      document.getElementById('cnt-saida').textContent   = all.filter(m=>m.tipo==='saida').length;
+
+      const data = getFiltered();
+      const grid = document.getElementById('mov-grid');
+      const empty = document.getElementById('empty-state');
+
+      if (!data.length) {
+        grid.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      grid.innerHTML = data.map(m => {
+        const veiculo = MockData.veiculos.find(v => v.placa === m.placa);
+        const modelo = veiculo ? veiculo.modelo : 'Veículo não cadastrado';
+        const tempo = calcTempo(m);
+        return `
+          <div class="mov-card">
+            <div class="mov-card-header ${m.tipo}">
+              <div>
+                <div class="mov-placa">${m.placa}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${modelo}</div>
+              </div>
+              <span class="badge badge-${m.tipo === 'entrada' ? 'success' : 'danger'}">
+                <i class="fas fa-${m.tipo === 'entrada' ? 'sign-in-alt' : 'sign-out-alt'}"></i>
+                ${m.tipo.charAt(0).toUpperCase() + m.tipo.slice(1)}
+              </span>
+            </div>
+            <div class="mov-card-body">
+              <div class="mov-info-item">
+                <span class="mov-info-label"><i class="fas fa-clock"></i> Horário</span>
+                <span class="mov-info-value">${Utils.formatTime(m.horario)}</span>
+              </div>
+              <div class="mov-info-item">
+                <span class="mov-info-label"><i class="fas fa-calendar"></i> Data</span>
+                <span class="mov-info-value">${Utils.formatDate(m.horario)}</span>
+              </div>
+              <div class="mov-info-item">
+                <span class="mov-info-label"><i class="fas fa-hourglass-half"></i> Permanência</span>
+                <span class="mov-info-value" style="color:var(--warning);font-weight:700;">${tempo}</span>
+              </div>
+              <div class="mov-info-item">
+                <span class="mov-info-label"><i class="fas fa-info-circle"></i> Proprietário</span>
+                <span class="mov-info-value">${veiculo ? veiculo.proprietario : '—'}</span>
+              </div>
+            </div>
+            <div style="padding:0 18px 16px;">
+              <div class="mov-img">
+                <i class="fas fa-camera"></i>
+                <span>Imagem não disponível (mock)</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('search-input').addEventListener('input', renderMovs);
+    renderMovs();
+  </script>
+</body>
+</html>
