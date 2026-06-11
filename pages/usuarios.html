@@ -140,7 +140,6 @@
     </div>
   </div>
 
-  <!-- Modal Criar/Editar -->
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
       <div class="modal-header">
@@ -199,7 +198,6 @@
     </div>
   </div>
 
-  <!-- Confirm Delete -->
   <div class="confirm-overlay" id="confirm-overlay">
     <div class="confirm-box">
       <div class="confirm-icon"><i class="fas fa-user-times"></i></div>
@@ -215,7 +213,7 @@
   <div id="toast-container" class="toast-container"></div>
   <script src="../js/script.js"></script>
   <script>
-    Auth.requireAuth();
+    Autenticacao.requireAuth();
     document.getElementById('sidebar-container').innerHTML = renderSidebar('usuarios');
     document.getElementById('topbar-container').innerHTML = renderTopbar('Gestão de Usuários', 'Gerencie colaboradores e operadores do sistema');
 
@@ -351,17 +349,16 @@
 
       if (!valid) return;
 
-      // Duplicate check
       const dup = usuarios.find(u => u.matricula === matricula && u.id !== editingId);
       if (dup) { showFErr('matricula', true, 'Matrícula já cadastrada.'); return; }
 
       if (editingId) {
         const idx = usuarios.findIndex(u => u.id === editingId);
         usuarios[idx] = { ...usuarios[idx], nome, email, matricula, cargo, nivel, status };
-        Toast.success('Usuário atualizado com sucesso!');
+        Notificacao.success('Usuário atualizado com sucesso!');
       } else {
         usuarios.push({ id: Date.now(), nome, email, matricula, cargo, nivel, status });
-        Toast.success('Usuário cadastrado com sucesso!');
+        Notificacao.success('Usuário cadastrado com sucesso!');
       }
       closeModal();
       renderTable();
@@ -373,7 +370,7 @@
       const idx = usuarios.findIndex(u => u.id === id);
       usuarios[idx].status = usuarios[idx].status === 'ativo' ? 'inativo' : 'ativo';
       renderTable();
-      Toast.info(`Usuário ${usuarios[idx].status === 'ativo' ? 'ativado' : 'desativado'}.`);
+      Notificacao.info(`Usuário ${usuarios[idx].status === 'ativo' ? 'ativado' : 'desativado'}.`);
     }
 
     function excluirUsuario(id) {
@@ -388,10 +385,9 @@
       usuarios = usuarios.filter(u => u.id !== deletingId);
       closeConfirm();
       renderTable();
-      Toast.success('Usuário removido com sucesso!');
+      Notificacao.success('Usuário removido com sucesso!');
     }
 
-    // Listeners
     document.getElementById('search-input').addEventListener('input', renderTable);
     document.getElementById('filter-nivel').addEventListener('change', renderTable);
     document.getElementById('filter-status').addEventListener('change', renderTable);

@@ -116,7 +116,6 @@
     </div>
   </div>
 
-  <!-- Modal Cadastro/Edição -->
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
       <div class="modal-header">
@@ -158,7 +157,6 @@
     </div>
   </div>
 
-  <!-- Modal Detalhes -->
   <div class="modal-overlay" id="detail-overlay">
     <div class="modal">
       <div class="modal-header">
@@ -169,7 +167,6 @@
     </div>
   </div>
 
-  <!-- Confirm Delete -->
   <div class="confirm-overlay" id="confirm-overlay">
     <div class="confirm-box">
       <div class="confirm-icon"><i class="fas fa-trash-alt"></i></div>
@@ -185,7 +182,7 @@
   <div id="toast-container" class="toast-container"></div>
   <script src="../js/script.js"></script>
   <script>
-    Auth.requireAuth();
+    Autenticacao.requireAuth();
     document.getElementById('sidebar-container').innerHTML = renderSidebar('veiculos');
     document.getElementById('topbar-container').innerHTML = renderTopbar('Controle de Veículos', 'Gerencie todos os veículos cadastrados');
 
@@ -236,7 +233,6 @@
       `).join('');
     }
 
-    // ---- CRUD ----
     function openModal(id = null) {
       editingId = id;
       clearForm();
@@ -276,7 +272,6 @@
       const matricula = document.getElementById('f-matricula').value.trim();
       let valid = true;
 
-      // Validate
       if (!Utils.validatePlaca(placa)) {
         showFieldError('placa', true);
         valid = false;
@@ -293,17 +288,16 @@
 
       if (!valid) return;
 
-      // Check placa duplicate
       const dup = veiculos.find(v => v.placa === placa && v.id !== editingId);
       if (dup) { showFieldError('placa', true, 'Placa já cadastrada.'); return; }
 
       if (editingId) {
         const idx = veiculos.findIndex(v => v.id === editingId);
         veiculos[idx] = { ...veiculos[idx], placa, modelo, cor, proprietario, matricula };
-        Toast.success('Veículo atualizado com sucesso!');
+        Notificacao.success('Veículo atualizado com sucesso!');
       } else {
         veiculos.push({ id: Date.now(), placa, modelo, cor, proprietario, matricula, status: 'fora', entrada: null });
-        Toast.success('Veículo cadastrado com sucesso!');
+        Notificacao.success('Veículo cadastrado com sucesso!');
       }
       closeModal();
       renderTable();
@@ -333,7 +327,7 @@
       veiculos = veiculos.filter(v => v.id !== deletingId);
       closeConfirm();
       renderTable();
-      Toast.success('Veículo removido com sucesso!');
+      Notificacao.success('Veículo removido com sucesso!');
     }
 
     function verDetalhes(id) {
@@ -371,16 +365,13 @@
     }
     function closeDetail() { document.getElementById('detail-overlay').classList.remove('open'); }
 
-    // Search & filter listeners
     document.getElementById('search-input').addEventListener('input', renderTable);
     document.getElementById('filter-status').addEventListener('change', renderTable);
 
-    // Close modals on overlay click
     document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
     document.getElementById('detail-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetail(); });
     document.getElementById('confirm-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
 
-    // Placa mask
     document.getElementById('f-placa').addEventListener('input', function() {
       let v = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
       if (v.length > 3) v = v.slice(0,3) + '-' + v.slice(3,7);

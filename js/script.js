@@ -1,5 +1,4 @@
-// ===== THEME =====
-const ThemeManager = {
+const GerenciadorTema = {
   init() {
     const saved = localStorage.getItem('ugb_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
@@ -12,13 +11,11 @@ const ThemeManager = {
   }
 };
 
-// ===== AUTH =====
-const Auth = {
+const Autenticacao = {
   isLoggedIn() {
     return !!localStorage.getItem('ugb_token');
   },
   login(email, senha) {
-    // Mock: aceita qualquer login válido
     if (email && senha.length >= 4) {
       localStorage.setItem('ugb_token', 'mock_token_123');
       localStorage.setItem('ugb_user', JSON.stringify({ nome: 'Admin UGB', email, cargo: 'Administrador' }));
@@ -47,7 +44,6 @@ function getBasePath() {
   return path.includes('/pages/') ? '../' : './';
 }
 
-// ===== MOCK DATA =====
 const MockData = {
   veiculos: [
     { id: 1, placa: 'RJC-2024', modelo: 'Toyota Corolla', cor: 'Prata', proprietario: 'Carlos Mendes', matricula: '20240001', status: 'estacionado', entrada: '2026-06-09T08:15:00' },
@@ -98,7 +94,6 @@ const MockData = {
   }
 };
 
-// ===== UTILS =====
 const Utils = {
   formatDate(dateStr) {
     if (!dateStr) return '—';
@@ -145,8 +140,7 @@ const Utils = {
   }
 };
 
-// ===== TOAST =====
-const Toast = {
+const Notificacao = {
   container: null,
   init() {
     this.container = document.getElementById('toast-container');
@@ -179,7 +173,6 @@ const Toast = {
   info(msg) { this.show(msg, 'info'); }
 };
 
-// ===== SIDEBAR =====
 const Sidebar = {
   init() {
     const toggle = document.getElementById('menu-toggle');
@@ -196,14 +189,14 @@ const Sidebar = {
         overlay.classList.remove('open');
       });
     }
-    // Mark active nav item
+
     const current = window.location.pathname.split('/').pop();
     document.querySelectorAll('.nav-item').forEach(item => {
       const href = item.getAttribute('href');
       if (href && href.includes(current)) item.classList.add('active');
     });
-    // Set user info
-    const user = Auth.getUser();
+
+    const user = Autenticacao.getUser();
     const nameEl = document.getElementById('sidebar-user-name');
     const roleEl = document.getElementById('sidebar-user-role');
     const avatarEl = document.getElementById('sidebar-avatar');
@@ -213,7 +206,6 @@ const Sidebar = {
   }
 };
 
-// ===== SIDEBAR HTML =====
 function renderSidebar(activeItem) {
   const basePath = getBasePath();
   return `
@@ -251,7 +243,7 @@ function renderSidebar(activeItem) {
             <div class="name" id="sidebar-user-name">Admin</div>
             <div class="role" id="sidebar-user-role">Administrador</div>
           </div>
-          <button class="icon-btn" onclick="Auth.logout()" title="Sair" style="background:transparent;border:none;">
+          <button class="icon-btn" onclick="Autenticacao.logout()" title="Sair" style="background:transparent;border:none;">
             <i class="fas fa-sign-out-alt" style="color:rgba(255,255,255,0.4);"></i>
           </button>
         </div>
@@ -260,7 +252,6 @@ function renderSidebar(activeItem) {
   `;
 }
 
-// ===== TOPBAR HTML =====
 function renderTopbar(title, subtitle) {
   return `
     <header class="topbar">
@@ -279,16 +270,14 @@ function renderTopbar(title, subtitle) {
   `;
 }
 
-// ===== INIT GLOBAL =====
 document.addEventListener('DOMContentLoaded', () => {
-  ThemeManager.init();
-  Toast.init();
+  GerenciadorTema.init();
+  Notificacao.init();
 
-  // Theme toggle
   const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
     themeToggle.addEventListener('click', () => {
-      ThemeManager.toggle();
+      GerenciadorTema.toggle();
       const label = document.getElementById('theme-label');
       if (label) label.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '🌙' : '☀️';
     });

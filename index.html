@@ -17,7 +17,6 @@
       position: relative;
     }
 
-    /* Background grid effect */
     body::before {
       content: '';
       position: fixed;
@@ -30,7 +29,6 @@
       z-index: 0;
     }
 
-    /* Glowing orbs */
     .orb {
       position: fixed;
       border-radius: 50%;
@@ -55,7 +53,6 @@
       to { transform: translate(30px,20px) scale(1.1); }
     }
 
-    /* Theme toggle at top right */
     .login-theme-toggle {
       position: fixed;
       top: 20px;
@@ -66,7 +63,6 @@
       z-index: 10;
     }
 
-    /* Login card */
     .login-wrapper {
       position: relative;
       z-index: 1;
@@ -257,12 +253,10 @@
 
   <script src="js/script.js"></script>
   <script>
-    // Redirecionar se já logado
-    if (Auth.isLoggedIn()) {
+    if (Autenticacao.isLoggedIn()) {
       window.location.href = 'pages/dashboard.html';
     }
 
-    // Toggle senha visível
     document.getElementById('toggle-pw').addEventListener('click', function() {
       const input = document.getElementById('senha');
       const isText = input.type === 'text';
@@ -270,7 +264,6 @@
       this.className = isText ? 'fas fa-eye toggle-pw' : 'fas fa-eye-slash toggle-pw';
     });
 
-    // Submit com Enter
     document.getElementById('senha').addEventListener('keydown', e => {
       if (e.key === 'Enter') doLogin();
     });
@@ -282,14 +275,12 @@
       const senha = document.getElementById('senha').value;
       let valid = true;
 
-      // Clear previous errors
       document.getElementById('email').classList.remove('invalid');
       document.getElementById('senha').classList.remove('invalid');
       document.getElementById('email-error').classList.remove('show');
       document.getElementById('senha-error').classList.remove('show');
       document.getElementById('error-box').classList.remove('show');
 
-      // Validate
       if (!Utils.validateEmail(email)) {
         document.getElementById('email').classList.add('invalid');
         document.getElementById('email-error').classList.add('show');
@@ -302,14 +293,13 @@
       }
       if (!valid) return;
 
-      // Loading
       const btn = document.getElementById('login-btn');
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Autenticando...';
 
       setTimeout(() => {
-        if (Auth.login(email, senha)) {
-          Toast.success('Bem-vindo ao RegiGate!');
+        if (Autenticacao.login(email, senha)) {
+          Notificacao.success('Bem-vindo ao RegiGate!');
           setTimeout(() => window.location.href = 'pages/dashboard.html', 800);
         } else {
           btn.disabled = false;

@@ -126,10 +126,8 @@
       <div id="topbar-container"></div>
       <main class="page-content">
 
-        <!-- Stats -->
         <div class="stats-grid" id="stats-grid"></div>
 
-        <!-- Charts Row -->
         <div class="chart-grid">
           <div class="card fade-up-1">
             <div class="card-header">
@@ -150,7 +148,6 @@
           </div>
         </div>
 
-        <!-- Recent movimentações -->
         <div class="card fade-up-3">
           <div class="card-header mb-16">
             <span class="card-title"><i class="fas fa-history" style="color:var(--warning);margin-right:8px;"></i>Últimas Movimentações</span>
@@ -168,13 +165,11 @@
   <div id="toast-container" class="toast-container"></div>
   <script src="../js/script.js"></script>
   <script>
-    Auth.requireAuth();
+    Autenticacao.requireAuth();
 
-    // Inject sidebar & topbar
     document.getElementById('sidebar-container').innerHTML = renderSidebar('dashboard');
     document.getElementById('topbar-container').innerHTML = renderTopbar('Dashboard', 'Visão geral do estacionamento em tempo real');
 
-    // Stats
     function renderStats() {
       const s = MockData.getStats();
       const percent = Math.round((s.estacionados / s.totalVagas) * 100);
@@ -229,14 +224,13 @@
           </div>
         </div>
       `;
-      // Animate bar
+
       setTimeout(() => {
         const fill = document.getElementById('vagas-fill');
         if (fill) fill.style.width = percent + '%';
       }, 300);
     }
 
-    // Gauge
     function renderGauge() {
       const s = MockData.getStats();
       const pct = s.estacionados / s.totalVagas;
@@ -260,7 +254,6 @@
       `;
     }
 
-    // Chart
     function renderChart() {
       const ctx = document.getElementById('fluxoChart').getContext('2d');
       const labels = ['06h','07h','08h','09h','10h','11h','12h','13h','14h','15h','16h','17h'];
@@ -290,7 +283,6 @@
       });
     }
 
-    // Recent list
     function renderRecent() {
       const recent = [...MockData.movimentacoes].sort((a,b) => new Date(b.horario) - new Date(a.horario)).slice(0,6);
       const container = document.getElementById('recent-list');

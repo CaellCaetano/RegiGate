@@ -87,7 +87,6 @@
       <div id="topbar-container"></div>
       <main class="page-content">
 
-        <!-- Filters -->
         <div class="filters-card fade-up">
           <div class="filters-title"><i class="fas fa-filter"></i> Filtros de Relatório</div>
           <div class="filters-grid">
@@ -131,10 +130,8 @@
           </div>
         </div>
 
-        <!-- Summary -->
         <div class="summary-row fade-up-1" id="summary-row"></div>
 
-        <!-- Results -->
         <div class="card fade-up-2">
           <div class="card-header" style="padding:20px 24px 0;">
             <div class="results-bar" style="width:100%;margin:0 0 16px;">
@@ -171,11 +168,10 @@
   <div id="toast-container" class="toast-container"></div>
   <script src="../js/script.js"></script>
   <script>
-    Auth.requireAuth();
+    Autenticacao.requireAuth();
     document.getElementById('sidebar-container').innerHTML = renderSidebar('relatorios');
     document.getElementById('topbar-container').innerHTML = renderTopbar('Relatórios Operacionais', 'Extraia e analise os dados do estacionamento');
 
-    // Default dates
     const hoje = new Date();
     const semAntras = new Date(); semAntras.setDate(hoje.getDate() - 7);
     document.getElementById('f-data-ini').value = semAntras.toISOString().slice(0,10);
@@ -201,9 +197,8 @@
       const periodo = document.getElementById('f-periodo').value;
       const placa = document.getElementById('f-placa').value.trim().toUpperCase();
 
-      // Validate dates
       if (dataIni && dataFim && dataIni > dataFim) {
-        Toast.error('A data inicial não pode ser maior que a data final.');
+        Notificacao.error('A data inicial não pode ser maior que a data final.');
         return;
       }
 
@@ -214,7 +209,6 @@
         const matchPlaca = !placa || m.placa.includes(placa);
         const matchPeriodo = !periodo || getPeriodo(m.horario) === periodo;
 
-        // Status filter: check vehicle status
         let matchStatus = true;
         if (status) {
           const v = MockData.veiculos.find(vv => vv.placa === m.placa);
@@ -226,7 +220,7 @@
 
       renderSummary();
       renderTable();
-      Toast.info(`${filteredData.length} registro(s) encontrado(s).`);
+      Notificacao.info(`${filteredData.length} registro(s) encontrado(s).`);
     }
 
     function limparFiltros() {
@@ -293,7 +287,7 @@
     }
 
     function exportarCSV() {
-      if (!filteredData.length) { Toast.warning('Nenhum dado para exportar.'); return; }
+      if (!filteredData.length) { Notificacao.warning('Nenhum dado para exportar.'); return; }
       const exportData = filteredData.map((m, i) => {
         const v = MockData.veiculos.find(vv => vv.placa === m.placa);
         return {
@@ -309,10 +303,9 @@
         };
       });
       Utils.exportCSV(exportData, `relatorio_regigate_${new Date().toISOString().slice(0,10)}.csv`);
-      Toast.success('Relatório exportado com sucesso!');
+      Notificacao.success('Relatório exportado com sucesso!');
     }
 
-    // Init
     aplicarFiltros();
   </script>
 </body>

@@ -148,7 +148,6 @@
       <div id="topbar-container"></div>
       <main class="page-content">
 
-        <!-- Toolbar -->
         <div class="toolbar fade-up">
           <div class="toolbar-left">
             <div class="tabs" id="tipo-tabs">
@@ -167,7 +166,6 @@
           </div>
         </div>
 
-        <!-- Cards grid -->
         <div class="mov-grid" id="mov-grid"></div>
 
         <div id="empty-state" style="display:none;">
@@ -181,7 +179,7 @@
   <div id="toast-container" class="toast-container"></div>
   <script src="../js/script.js"></script>
   <script>
-    Auth.requireAuth();
+    Autenticacao.requireAuth();
     document.getElementById('sidebar-container').innerHTML = renderSidebar('movimentacoes');
     document.getElementById('topbar-container').innerHTML = renderTopbar('Controle de Entradas e Saídas', 'Monitoramento em tempo real das movimentações');
 
@@ -206,7 +204,6 @@
     function calcTempo(m) {
       if (m.tempo) return m.tempo;
       if (m.tipo === 'entrada') {
-        // Still parked
         return Utils.calcPermanencia(m.horario);
       }
       return '—';
